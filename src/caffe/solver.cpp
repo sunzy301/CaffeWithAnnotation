@@ -10,7 +10,8 @@
 #include "caffe/util/upgrade_proto.hpp"
 
 namespace caffe {
-
+  
+// 设置回调函数
 template<typename Dtype>
 void Solver<Dtype>::SetActionFunction(ActionCallback func) {
   action_request_function_ = func;

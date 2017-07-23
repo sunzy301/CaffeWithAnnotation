@@ -14,6 +14,7 @@
 #include "caffe/syncedmem.hpp"
 #include "caffe/util/blocking_queue.hpp"
 
+// 用于单机多卡
 namespace caffe {
 
 // Represents a net parameters. Once a net is created, its parameter buffers can
@@ -85,6 +86,7 @@ template<typename Dtype>
 class P2PSync : public GPUParams<Dtype>, public Solver<Dtype>::Callback,
     public InternalThread {
  public:
+  // 构造函数
   explicit P2PSync(shared_ptr<Solver<Dtype> > root_solver,
                    P2PSync<Dtype>* parent, const SolverParameter& param);
   virtual ~P2PSync();
@@ -93,6 +95,7 @@ class P2PSync : public GPUParams<Dtype>, public Solver<Dtype>::Callback,
     return solver_;
   }
 
+  // 单机多卡运行训练
   void run(const vector<int>& gpus);
 
  protected:

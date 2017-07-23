@@ -196,8 +196,7 @@ void DevicePair::compute(const vector<int> devices, vector<DevicePair>* pairs) {
 #endif
 }
 
-//
-
+// 构造函数
 template<typename Dtype>
 P2PSync<Dtype>::P2PSync(shared_ptr<Solver<Dtype> > root_solver,
                         P2PSync<Dtype>* parent, const SolverParameter& param)

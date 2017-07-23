@@ -40,6 +40,7 @@ typedef boost::function<SolverAction::Enum()> ActionCallback;
 template <typename Dtype>
 class Solver {
  public:
+  // 构造函数
   explicit Solver(const SolverParameter& param,
       const Solver* root_solver = NULL);
   explicit Solver(const string& param_file, const Solver* root_solver = NULL);
@@ -50,12 +51,15 @@ class Solver {
   // Client of the Solver optionally may call this in order to set the function
   // that the solver uses to see what action it should take (e.g. snapshot or
   // exit training early).
+  // 设置回调函数
   void SetActionFunction(ActionCallback func);
   SolverAction::Enum GetRequestedAction();
   // The main entry of the solver function. In default, iter will be zero. Pass
   // in a non-zero iter number to resume training for a pre-trained net.
+  // 训练模型
   virtual void Solve(const char* resume_file = NULL);
   inline void Solve(const string resume_file) { Solve(resume_file.c_str()); }
+  // 单步执行训练
   void Step(int iters);
   // The Restore method simply dispatches to one of the
   // RestoreSolverStateFrom___ protected methods. You should implement these
@@ -67,7 +71,9 @@ class Solver {
   // written to disk together with the learned net.
   void Snapshot();
   virtual ~Solver() {}
+  // 获取学习器参数
   inline const SolverParameter& param() const { return param_; }
+  // 获取训练网络
   inline shared_ptr<Net<Dtype> > net() { return net_; }
   inline const vector<shared_ptr<Net<Dtype> > >& test_nets() {
     return test_nets_;
@@ -127,6 +133,7 @@ class Solver {
 
   // A function that can be set by a client of the Solver to provide indication
   // that it wants a snapshot saved and/or to exit early.
+  // 回调函数，当退出的时候手否需要保存等操作
   ActionCallback action_request_function_;
 
   // True iff a request to stop early was received.
