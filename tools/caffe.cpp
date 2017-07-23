@@ -25,6 +25,9 @@ using caffe::Timer;
 using caffe::vector;
 using std::ostringstream;
 
+// caffe命令行
+// 包含训练，测试以及评估时间三个功能
+
 DEFINE_string(gpu, "",
     "Optional; run in GPU mode on given device IDs separated by ','."
     "Use '-gpu all' to run on all available GPUs. The effective training "
@@ -150,15 +153,18 @@ caffe::SolverAction::Enum GetRequestedAction(
 }
 
 // Train / Finetune a model.
+// 训练或者微调一个网络
 int train() {
   CHECK_GT(FLAGS_solver.size(), 0) << "Need a solver definition to train.";
   CHECK(!FLAGS_snapshot.size() || !FLAGS_weights.size())
       << "Give a snapshot to resume training or weights to finetune "
       "but not both.";
 
+  // 读取一个学习器的proto
   caffe::SolverParameter solver_param;
   caffe::ReadSolverParamsFromTextFileOrDie(FLAGS_solver, &solver_param);
 
+  // 设置运行设备
   // If the gpus flag is not provided, allow the mode and device to be set
   // in the solver prototxt.
   if (FLAGS_gpu.size() == 0
@@ -193,22 +199,28 @@ int train() {
         GetRequestedAction(FLAGS_sigint_effect),
         GetRequestedAction(FLAGS_sighup_effect));
 
+  // 构造学习器
   shared_ptr<caffe::Solver<float> >
       solver(caffe::SolverRegistry<float>::CreateSolver(solver_param));
 
+  // 设置回调函数
   solver->SetActionFunction(signal_handler.GetActionFunction());
 
+  // 从某个snapshot上进行回复
   if (FLAGS_snapshot.size()) {
     LOG(INFO) << "Resuming from " << FLAGS_snapshot;
     solver->Restore(FLAGS_snapshot.c_str());
   } else if (FLAGS_weights.size()) {
+    // 复制已有的权重
     CopyLayers(solver.get(), FLAGS_weights);
   }
 
   if (gpus.size() > 1) {
+    // 多GPU训练
     caffe::P2PSync<float> sync(solver, NULL, solver->param());
     sync.run(gpus);
   } else {
+    // 单GPU训练
     LOG(INFO) << "Starting Optimization";
     solver->Solve();
   }
@@ -219,11 +231,13 @@ RegisterBrewFunction(train);
 
 
 // Test: score a model.
+// 测试，网络预测输出
 int test() {
   CHECK_GT(FLAGS_model.size(), 0) << "Need a model definition to score.";
   CHECK_GT(FLAGS_weights.size(), 0) << "Need model weights to score.";
 
   // Set device id and mode
+  // 设置运行设备
   vector<int> gpus;
   get_gpus(&gpus);
   if (gpus.size() != 0) {
@@ -235,6 +249,7 @@ int test() {
     Caffe::set_mode(Caffe::CPU);
   }
   // Instantiate the caffe net.
+  // 读取并初始化网络参数
   Net<float> caffe_net(FLAGS_model, caffe::TEST);
   caffe_net.CopyTrainedLayersFrom(FLAGS_weights);
   LOG(INFO) << "Running for " << FLAGS_iterations << " iterations.";
@@ -245,11 +260,14 @@ int test() {
   float loss = 0;
   for (int i = 0; i < FLAGS_iterations; ++i) {
     float iter_loss;
+    // 前向预测，计算损失
     const vector<Blob<float>*>& result =
         caffe_net.Forward(bottom_vec, &iter_loss);
     loss += iter_loss;
     int idx = 0;
     for (int j = 0; j < result.size(); ++j) {
+      // 获得一个输出blob的数据
+      //可能就是一个softmax对于不同类别的预测概率
       const float* result_vec = result[j]->cpu_data();
       for (int k = 0; k < result[j]->count(); ++k, ++idx) {
         const float score = result_vec[k];
@@ -287,6 +305,7 @@ RegisterBrewFunction(test);
 
 
 // Time: benchmark the execution time of a model.
+// 估计一个网络的运行时间
 int time() {
   CHECK_GT(FLAGS_model.size(), 0) << "Need a model definition to time.";
 
@@ -375,6 +394,7 @@ int time() {
 }
 RegisterBrewFunction(time);
 
+// 主函数
 int main(int argc, char** argv) {
   // Print output to stderr (while still logging).
   FLAGS_alsologtostderr = 1;
